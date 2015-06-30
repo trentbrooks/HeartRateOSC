@@ -1,0 +1,5 @@
+
+
+--------------------------------------- 2015-06-29-22-13-10-743
+[notice ] ofxBLEHeartRate initiated
+[notice ] Begin scanning for BLE peripherals...

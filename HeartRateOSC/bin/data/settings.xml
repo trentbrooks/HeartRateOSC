@@ -1,0 +1,32 @@
+<settings>
+	<control>
+		<type>constant</type>
+		<label>host</label>
+		<value>127.0.0.1</value>
+	</control>
+	<control>
+		<type>constant</type>
+		<label>port</label>
+		<value>7761</value>
+	</control>
+<control>
+		<type>dropdown</type>
+		<label>DROPDOWN LIST B</label>
+		<value>1</value>
+	</control>
+<control>
+		<type>dropdown</type>
+		<label>DEVICES LIST</label>
+		<value>0</value>
+	</control>
+<control>
+		<type>variable</type>
+		<label>RSSI</label>
+		<value>0</value>
+	</control>
+<control>
+		<type>variable</type>
+		<label>Status:</label>
+		<value>Scanning...</value>
+	</control>
+</settings>
