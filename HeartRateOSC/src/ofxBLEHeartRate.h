@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #import <IOBluetooth/IOBluetooth.h>
+#import <CoreBluetooth/CoreBluetooth.h>
 #import <Foundation/Foundation.h>
 
 /*

@@ -4,7 +4,7 @@
 #include "ofxTouchGUI.h"
 #include "ofxBLEHeartRate.h"
 
-#define _VER 0.2
+#define _VER 0.3
 
 class ofApp : public ofBaseApp{
 

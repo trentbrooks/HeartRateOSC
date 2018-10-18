@@ -144,6 +144,7 @@ void ofxBLEHeartRate::draw(){
     }
     
     
+    // IBI: http://www.researchgate.net/post/How_to_measure_the_interbeat_interval_in_human_patients
     self.pulseTimer = [NSTimer scheduledTimerWithTimeInterval:(60. / heartRate) target:self selector:@selector(pulse) userInfo:nil repeats:NO];
 }
 
@@ -426,7 +427,9 @@ void ofxBLEHeartRate::draw(){
         }
         
         /* GAP (Generic Access Profile) for Device Name */
-        if ( [aService.UUID isEqual:[CBUUID UUIDWithString:CBUUIDGenericAccessProfileString]] )
+        // https://stackoverflow.com/questions/19984314/core-bluetooth-deprecations-for-ios-7?noredirect=1&lq=1
+        //CBUUIDGenericAccessProfileString = "1800" //0x1800 is the Generic Access Service Identifier
+        if ( [aService.UUID isEqual:[CBUUID UUIDWithString:@"1800"]] )
         {
             [aPeripheral discoverCharacteristics:nil forService:aService];
             ofxBLEHeartRateEventArgs args(string([aPeripheral.identifier.UUIDString UTF8String]), string([aPeripheral.name UTF8String]), heartRate,aPeripheral.RSSI.intValue, "Service found: GenericAccessProfile");
@@ -478,12 +481,15 @@ void ofxBLEHeartRate::draw(){
         }
     }
     
-    if ( [service.UUID isEqual:[CBUUID UUIDWithString:CBUUIDGenericAccessProfileString]] )
+    // https://stackoverflow.com/questions/19984314/core-bluetooth-deprecations-for-ios-7?noredirect=1&lq=1
+    //CBUUIDGenericAccessProfileString = @"1800" //0x1800 is the Generic Access Service Identifier
+    if ( [service.UUID isEqual:[CBUUID UUIDWithString:@"1800"]] )
     {
         for (CBCharacteristic *aChar in service.characteristics)
         {
             /* Read device name */
-            if ([aChar.UUID isEqual:[CBUUID UUIDWithString:CBUUIDDeviceNameString]])
+            // CBUUIDDeviceNameString = @"2A00" // 0x2A00
+            if ([aChar.UUID isEqual:[CBUUID UUIDWithString:@"2A00"]])
             {
                 [aPeripheral readValueForCharacteristic:aChar];
                 //NSLog(@"Found a Device Name Characteristic");
@@ -569,7 +575,8 @@ void ofxBLEHeartRate::draw(){
         }
     }
     /* Value for device Name received */
-    else if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:CBUUIDDeviceNameString]])
+    // CBUUIDDeviceNameString = @"2A00" // 0x2A00
+    else if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:@"2A00"]])
     {
         NSString * deviceName = [[[NSString alloc] initWithData:characteristic.value encoding:NSUTF8StringEncoding] autorelease];
         //NSLog(@"Device Name = %@", deviceName);
