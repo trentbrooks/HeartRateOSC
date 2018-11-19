@@ -5,7 +5,7 @@ void ofxBLEHeartRate::setup(){
     
     // setup delegate + start scanning
     bleHeartRateDelegate = [[ofxBLEHeartRateDelegate alloc] init:this ];
-    startScan();
+    //startScan();
 }
 
 ofxBLEHeartRate::~ofxBLEHeartRate(){
@@ -50,7 +50,9 @@ void ofxBLEHeartRate::draw(){
 @implementation ofxBLEHeartRateDelegate
 
 @synthesize isConnected;
+@synthesize isPoweredOn;
 @synthesize heartRate;
+@synthesize r2r;
 @synthesize pulseTimer;
 @synthesize heartRateMonitors;
 @synthesize manufacturer;
@@ -62,6 +64,7 @@ void ofxBLEHeartRate::draw(){
         ofLog() << "ofxBLEHeartRate initiated";
         bleHeartRateCpp = bleCpp; // ref to OF instance
         isConnected = FALSE;
+        isPoweredOn = FALSE;
         
         self.heartRateMonitors = [NSMutableArray array];
         manager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
@@ -89,22 +92,72 @@ void ofxBLEHeartRate::draw(){
 - (void) updateWithHRMData:(NSData *)data
 {
     const uint8_t *reportData = (uint8_t*)[data bytes];
+    const uint8_t *reportDataEnd = reportData + [data length];
     //const void *reportData = [data bytes];
+    uint8_t flags = *reportData++;
+    
     uint16_t bpm = 0;
     
-    if ((reportData[0] & 0x01) == 0)
-    {
-        /* uint8 bpm */
-        bpm = reportData[1];
-    }
-    else
-    {
+//    if ((reportData[0] & 0x01) == 0)
+//    {
+//        /* uint8 bpm */
+//        bpm = reportData[1];
+//    }
+//    else
+//    {
+//        /* uint16 bpm */
+//        bpm = CFSwapInt16LittleToHost(*(uint16_t *)(&reportData[1]));
+//    }
+    
+    if (flags & 0x01) {
         /* uint16 bpm */
-        bpm = CFSwapInt16LittleToHost(*(uint16_t *)(&reportData[1]));
+        bpm = CFSwapInt16LittleToHost(*(uint16_t *)reportData);
+        
+        reportData += 2;
+    } else {
+        /* uint8 bpm */
+        bpm = *reportData++;
+    }
+    
+    NSMutableArray *r2rsMutableArray = [[NSMutableArray alloc] init];
+    if (flags & 0x10) {
+        // interbeat interval
+        int count = 0;
+        double totalDuration = 0;
+        while (reportData < reportDataEnd) {
+            
+            double an_r2r = CFSwapInt16LittleToHost(*(uint16_t*) reportData)/1024.0;
+            [r2rsMutableArray addObject:[NSNumber numberWithDouble:an_r2r]];
+            //            NSString *log = [NSString stringWithFormat:@"ibi is: %f and this is item no. %d",an_r2r, count];
+            //            [self sendMessageToUIConsole:log];
+            count++;
+            totalDuration += an_r2r;
+            reportData += 2;
+        }
     }
     
     uint16_t oldBpm = self.heartRate;
     self.heartRate = bpm;
+    
+    if([r2rsMutableArray count] > 0) {
+        
+        self.r2r = [[r2rsMutableArray objectAtIndex:[r2rsMutableArray count]-1]doubleValue];
+        //ofLog() << "R2R: " << self.r2r;
+        //        self.r2r = r2rs[r2rs.size() - 1];
+        //NSLog(@"r2r beat: %f", self.r2r);
+        
+        /*NSMutableDictionary* userInfo = [NSMutableDictionary dictionary];
+        [userInfo setObject:[NSNumber numberWithFloat:self.r2r] forKey:RR_VALUE];
+        [nc postNotificationName:BT_RR_NOTIFICATION object:self userInfo:userInfo];
+        */
+        
+        ofxBLEHeartRateEventArgs args(string([peripheral.identifier.UUIDString UTF8String]), string([peripheral.name UTF8String]), r2r, "R2R");
+        ofNotifyEvent(bleHeartRateCpp->r2rEvent, args);
+        
+    } else if (bpm == 0) {
+        self.r2r = 0;
+    }
+    
     //NSLog(@"Pulse: %d", heartRate );
     if (oldBpm == 0)
     {
@@ -159,6 +212,7 @@ void ofxBLEHeartRate::draw(){
 {
     NSString * state = nil;
     
+    
     switch ([manager state])
     {
         case CBCentralManagerStateUnsupported:
@@ -171,9 +225,12 @@ void ofxBLEHeartRate::draw(){
             state = @"Bluetooth is currently powered off.";
             break;
         case CBCentralManagerStatePoweredOn:
+            ofLog() << "ok isLECapableHardware";
+            state = @"Bluetooth is currently powered ON.";
             return TRUE;
         case CBCentralManagerStateUnknown:
         default:
+            ofLog() << "Unknown state: " << string([state UTF8String]);
             return FALSE;
             
     }
@@ -190,7 +247,14 @@ void ofxBLEHeartRate::draw(){
 {
     //NSLog(@"Begin scanning for BLE peripherals...");
     ofLog() << "Begin scanning for BLE peripherals...";
-    [manager scanForPeripheralsWithServices:[NSArray arrayWithObject:[CBUUID UUIDWithString:@"180D"]] options:nil];
+    if (isPoweredOn) {
+        NSArray *serviceTypes = @[[CBUUID UUIDWithString:@"FEE8"], [CBUUID UUIDWithString:@"180D"]];
+        [manager scanForPeripheralsWithServices:serviceTypes options:nil];
+//        [manager scanForPeripheralsWithServices:[NSArray arrayWithObject:[CBUUID UUIDWithString:@"FEE8"]] options:nil];
+    } else {
+        ofLog() << "Must wait till centralManagerDidUpdateState callback"; //https://stackoverflow.com/questions/23338767/ios-core-bluetooth-getting-api-misuse-warning
+    }
+    
 }
 
 /*
@@ -245,7 +309,13 @@ void ofxBLEHeartRate::draw(){
  */
 - (void) centralManagerDidUpdateState:(CBCentralManager *)central
 {
-    [self isLECapableHardware];
+    ofLog() << "centralManagerDidUpdateState";
+    if([self isLECapableHardware]) {
+        isPoweredOn = TRUE;
+        [self startScan];
+    } else {
+        ofLog() << "Not powered on yet?";
+    }
 }
 
 /*
@@ -254,13 +324,33 @@ void ofxBLEHeartRate::draw(){
 - (void) centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)aPeripheral advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI
 {
     NSMutableArray *peripherals = [self mutableArrayValueForKey:@"heartRateMonitors"];
+    double rssi = [RSSI doubleValue];
+    ofLog() << "Found device with rssi " << rssi;
+    NSLog(@"Doct %@", advertisementData);
+    // https://stackoverflow.com/questions/28280025/core-bluetooth-doesnt-find-peripherals-when-scanning-for-specific-cbuuid
+//    2018-11-05 21:27:17.043136+1100 HeartRateOSC[57353:3373245] Doct {
+//        kCBAdvDataIsConnectable = 0;
+//        kCBAdvDataServiceUUIDs =     (
+//                                      "Heart Rate",
+//                                      "Device Information",
+//                                      Battery,
+//                                      FEE8
+//                                      );
+//    }
+    
+
     if( ![self.heartRateMonitors containsObject:aPeripheral] ) {
-        [peripherals addObject:aPeripheral];
+        
         
         // new device detected
-        ofxBLEHeartRateEventArgs args(string([aPeripheral.identifier.UUIDString UTF8String]), string([aPeripheral.name UTF8String]), 0, RSSI.intValue, "Discovered device");
-        ofNotifyEvent(bleHeartRateCpp->scanEvent, args);//, bleHeartRateCpp);
-        ofNotifyEvent(bleHeartRateCpp->statusEvent, args);
+        if(aPeripheral.name != nil) {
+            [peripherals addObject:aPeripheral];
+            
+            ofxBLEHeartRateEventArgs args(string([aPeripheral.identifier.UUIDString UTF8String]), string([aPeripheral.name UTF8String]), 0, RSSI.intValue, "Discovered device");
+            ofNotifyEvent(bleHeartRateCpp->scanEvent, args);//, bleHeartRateCpp);
+            ofNotifyEvent(bleHeartRateCpp->statusEvent, args);
+        }
+        
         
         /* Retreive already known devices */
         //if(autoConnect)
@@ -522,6 +612,8 @@ void ofxBLEHeartRate::draw(){
  */
 - (void) peripheral:(CBPeripheral *)aPeripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
 {
+    NSLog(@"received value for char %@", characteristic.UUID);
+    
     /* Updated value for heart rate measurement received */
     if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:@"2A37"]])
     {
@@ -533,6 +625,7 @@ void ofxBLEHeartRate::draw(){
         }
     }
     /* Value for body sensor location received */
+    // corsense elitehrv finger here
     else  if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:@"2A38"]])
     {
         NSData * updatedValue = characteristic.value;
@@ -593,11 +686,21 @@ void ofxBLEHeartRate::draw(){
         ofxBLEHeartRateEventArgs args(string([aPeripheral.identifier.UUIDString UTF8String]), string([aPeripheral.name UTF8String]), heartRate,aPeripheral.RSSI.intValue, "Manufacturer name received: " + string([self.manufacturer  UTF8String]));
         ofNotifyEvent(bleHeartRateCpp->statusEvent, args);
     }
+    else {
+        // ok wtf is the value
+        ofLog() << "Unknown charactersitc value " << string([characteristic.UUID.UUIDString UTF8String]);
+    }
+}
+
+- (void)peripheral:(CBPeripheral *)peripheral
+       didReadRSSI:(NSNumber *)RSSI
+             error:(NSError *)error {
+    //NSLog(@"ok rssi: %@", RSSI);
 }
 
 - (void) peripheralDidUpdateRSSI:(CBPeripheral *)peripheral
                           error:(NSError *)error {
-    //NSLog(@"ok rssi: %@", [peripheral RSSI]);
+    //NSLog(@"ok2 rssi: %@", [peripheral RSSI]);
 }
 
 @end

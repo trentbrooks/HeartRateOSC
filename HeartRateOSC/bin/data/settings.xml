@@ -29,4 +29,9 @@
 		<label>Status:</label>
 		<value>Scanning...</value>
 	</control>
+<control>
+		<type>variable</type>
+		<label>R2R</label>
+		<value>0</value>
+	</control>
 </settings>

@@ -4,7 +4,7 @@
 #include "ofxTouchGUI.h"
 #include "ofxBLEHeartRate.h"
 
-#define _VER 0.3
+#define _VER 0.4
 
 class ofApp : public ofBaseApp{
 
@@ -43,6 +43,7 @@ class ofApp : public ofBaseApp{
     void onScanEvent(ofxBLEHeartRateEventArgs& args);
     void onStatusEvent(ofxBLEHeartRateEventArgs& args);
     void onHRMEvent(ofxBLEHeartRateEventArgs& args);
+    void onR2REvent(ofxBLEHeartRateEventArgs& args);
     void onConnectEvent(ofxBLEHeartRateEventArgs& args);
     void onDisconnectEvent(ofxBLEHeartRateEventArgs& args);
     
@@ -53,5 +54,6 @@ class ofApp : public ofBaseApp{
     int selectedDeviceIndex;// = 1;
     int heartRate;
     int rssi;
+    float r2r;
 		
 };

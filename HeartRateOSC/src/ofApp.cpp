@@ -15,14 +15,18 @@ void ofApp::setup(){
     
     bleHeartRate.setup();
     ofAddListener(bleHeartRate.hrmEvent, this, &ofApp::onHRMEvent);
+    ofAddListener(bleHeartRate.r2rEvent, this, &ofApp::onR2REvent);
     ofAddListener(bleHeartRate.scanEvent, this, &ofApp::onScanEvent);
     ofAddListener(bleHeartRate.statusEvent, this, &ofApp::onStatusEvent);
     ofAddListener(bleHeartRate.connectEvent, this, &ofApp::onConnectEvent);
     ofAddListener(bleHeartRate.disconnectEvent, this, &ofApp::onDisconnectEvent);
     
+    
+    
     deviceName = "";
     heartRate = 0;
     rssi = 0;
+    r2r = 0;
     statusMessages = "Scanning...";
     
     // osc settings
@@ -80,8 +84,9 @@ void ofApp::setupGUI() {
     bpmGraph->setCustomRange(0, 200);
     
     settings.addVarText("RSSI", &rssi, 20, 420);
-    settings.addText("---------------------------------------------------------------------------------------------", 20, 440);
-    statusLabel = settings.addText(statusMessages, 20, 460);
+    settings.addVarText("R2R", &r2r, 20, 440);
+    settings.addText("---------------------------------------------------------------------------------------------", 20, 460);
+    statusLabel = settings.addText(statusMessages, 20, 480);
     
     settings.addEventListenerAllItems(this);
 }
@@ -119,13 +124,27 @@ void ofApp::onHRMEvent(ofxBLEHeartRateEventArgs& args) {
     //ofLog() << "hrm data: " << args.data << ", " << args.rssi << ", " << args.peripheralName;
     
     rssi = args.rssi;
-    this->heartRate = args.data;
+    this->heartRate = args.heartRate;
     ofxOscMessage msg;
     msg.setAddress("/hrm");
     msg.addStringArg(args.peripheralId);
     msg.addStringArg(args.peripheralName);
-    msg.addIntArg(args.data);
+    msg.addIntArg(args.heartRate);
     msg.addIntArg(args.rssi);
+    //settings.sendOSC("/hr", heartRate);
+    //settings.sendOSC("/rssi", rssi);
+    settings.sendOSC(msg);
+}
+
+void ofApp::onR2REvent(ofxBLEHeartRateEventArgs& args) {
+    
+    r2r = args.rr;
+    ofxOscMessage msg;
+    msg.setAddress("/rr");
+    msg.addStringArg(args.peripheralId);
+    msg.addStringArg(args.peripheralName);
+    msg.addFloatArg(args.rr);
+    //msg.addIntArg(args.rssi);
     //settings.sendOSC("/hr", heartRate);
     //settings.sendOSC("/rssi", rssi);
     settings.sendOSC(msg);
