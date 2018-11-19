@@ -15,6 +15,11 @@ It's been tested with the Mio Alpha 2, and Mio Link. But should work with any co
     Arg[1]: Peripheral name (string)
     Arg[2]: Heart rate value bpm (int)
     Arg[3]: RSSI / Bluetooth strength (int)
+    
+    Address: "/rr"
+    Arg[0]: Peripheral id (string)
+    Arg[1]: Peripheral name (string)
+    Arg[2]: RR interval (float)
 
 ## Openframeworks addons ##
 * 	ofxXmlSettings & ofxOsc (core addons)
