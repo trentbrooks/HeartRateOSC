@@ -97,6 +97,7 @@ void ofxBLEHeartRate::draw(){
     uint8_t flags = *reportData++;
     
     uint16_t bpm = 0;
+    ushort offset = 1;
     
 //    if ((reportData[0] & 0x01) == 0)
 //    {
@@ -112,22 +113,41 @@ void ofxBLEHeartRate::draw(){
     if (flags & 0x01) {
         /* uint16 bpm */
         bpm = CFSwapInt16LittleToHost(*(uint16_t *)reportData);
-        
+//        ofLog() << "16bit: " << bpm;
         reportData += 2;
     } else {
         /* uint8 bpm */
         bpm = *reportData++;
+        //ofLog() << "8bit: " << bpm;
     }
     
-    NSMutableArray *r2rsMutableArray = [[NSMutableArray alloc] init];
+    uint16_t energyExpended = 0;
+    boolean_t energyExpendedValid = false;
+    
+    if (flags & 0x08) {
+        // energy expended. Mio doesn't report this.
+        energyExpended = CFSwapInt16LittleToHost(*(uint16_t*) reportData);
+        energyExpendedValid = true;
+        reportData += 2;
+        ofLog() << "energy expended flag: " << energyExpended;
+    }
+    
+
+    // https://stackoverflow.com/questions/17422218/bluetooth-low-energy-how-to-parse-r-r-interval-value/19693236
+    // https://stackoverflow.com/questions/17422218/bluetooth-low-energy-how-to-parse-r-r-interval-value
+    //NSMutableArray *r2rsMutableArray = [[NSMutableArray alloc] init];
+    vector<float> r2rsMutableArray;
     if (flags & 0x10) {
         // interbeat interval
         int count = 0;
         double totalDuration = 0;
+        //int dl = data.length
+        //int rr_intervals_count = ((int)data.length - reportData) / 2;
         while (reportData < reportDataEnd) {
             
             double an_r2r = CFSwapInt16LittleToHost(*(uint16_t*) reportData)/1024.0;
-            [r2rsMutableArray addObject:[NSNumber numberWithDouble:an_r2r]];
+            //[r2rsMutableArray addObject:[NSNumber numberWithDouble:an_r2r]];
+            r2rsMutableArray.push_back(an_r2r);
             //            NSString *log = [NSString stringWithFormat:@"ibi is: %f and this is item no. %d",an_r2r, count];
             //            [self sendMessageToUIConsole:log];
             count++;
@@ -139,9 +159,12 @@ void ofxBLEHeartRate::draw(){
     uint16_t oldBpm = self.heartRate;
     self.heartRate = bpm;
     
-    if([r2rsMutableArray count] > 0) {
+//    if([r2rsMutableArray count] > 0) {
+    if(r2rsMutableArray.size() > 0) {
         
-        self.r2r = [[r2rsMutableArray objectAtIndex:[r2rsMutableArray count]-1]doubleValue];
+        //self.r2r = [[r2rsMutableArray objectAtIndex:[r2rsMutableArray count]-1]doubleValue];
+        self.r2r = r2rsMutableArray[r2rsMutableArray.size()-1];
+        
         //ofLog() << "R2R: " << self.r2r;
         //        self.r2r = r2rs[r2rs.size() - 1];
         //NSLog(@"r2r beat: %f", self.r2r);
@@ -151,7 +174,7 @@ void ofxBLEHeartRate::draw(){
         [nc postNotificationName:BT_RR_NOTIFICATION object:self userInfo:userInfo];
         */
         
-        ofxBLEHeartRateEventArgs args(string([peripheral.identifier.UUIDString UTF8String]), string([peripheral.name UTF8String]), r2r, "R2R");
+        ofxBLEHeartRateEventArgs args(string([peripheral.identifier.UUIDString UTF8String]), string([peripheral.name UTF8String]), r2rsMutableArray, "R2R");
         ofNotifyEvent(bleHeartRateCpp->r2rEvent, args);
         
     } else if (bpm == 0) {

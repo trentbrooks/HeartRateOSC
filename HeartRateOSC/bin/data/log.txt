@@ -1,7 +1,31 @@
 
 
---------------------------------------- 2018-11-19-10-56-31-794
+--------------------------------------- 2018-11-19-21-09-15-072
 [notice ] ofxBLEHeartRate initiated
 [notice ] centralManagerDidUpdateState
 [notice ] ok isLECapableHardware
 [notice ] Begin scanning for BLE peripherals...
+[notice ] Found device with rssi -45
+[notice ] CONNECT!
+[notice ] Connecting... to peripheral: CorSense A-04922
+[notice ] Found device with rssi 76
+[notice ] Connected to peripheral: CorSense A-04922
+[notice ] Service found with UUID: 180A
+[notice ] Service found with UUID: 180D
+[notice ] Service found with UUID: 180F
+[notice ] Service found with UUID: FEE8
+[notice ] Found a Device Manufacturer Name Characteristic
+[notice ] Found a Heart Rate Measurement Characteristic
+[notice ] Found a Body Sensor Location Characteristic
+[notice ] Manufacturer Name = Elite
+[notice ] Body Sensor Location = Finger
+[notice ] energy expended flag: 6
+[notice ] energy expended flag: 6
+[notice ] energy expended flag: 6
+[notice ] energy expended flag: 6
+[notice ] energy expended flag: 6
+[notice ] energy expended flag: 6
+[notice ] energy expended flag: 6
+[notice ] energy expended flag: 6
+[notice ] energy expended flag: 6
+[notice ] energy expended flag: 0

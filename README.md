@@ -19,7 +19,9 @@ It's been tested with the Mio Alpha 2, and Mio Link. But should work with any co
     Address: "/rr"
     Arg[0]: Peripheral id (string)
     Arg[1]: Peripheral name (string)
-    Arg[2]: RR interval (float)
+    Arg[2]: RR interval array size (int)
+    Arg[3]: RR interval [0] (float)
+    Arg[4]: RR interval [...] (float)
 
 ## Openframeworks addons ##
 * 	ofxXmlSettings & ofxOsc (core addons)

@@ -26,7 +26,7 @@ void ofApp::setup(){
     deviceName = "";
     heartRate = 0;
     rssi = 0;
-    r2r = 0;
+    r2r = "";
     statusMessages = "Scanning...";
     
     // osc settings
@@ -138,12 +138,19 @@ void ofApp::onHRMEvent(ofxBLEHeartRateEventArgs& args) {
 
 void ofApp::onR2REvent(ofxBLEHeartRateEventArgs& args) {
     
-    r2r = args.rr;
+    stringstream rrStr; // for gui display
+    vector<float> r2rList = args.rr; // repalce vector, not using last value anymore
     ofxOscMessage msg;
     msg.setAddress("/rr");
     msg.addStringArg(args.peripheralId);
     msg.addStringArg(args.peripheralName);
-    msg.addFloatArg(args.rr);
+    msg.addIntArg(r2rList.size());
+    for(float rr : r2rList) {
+        msg.addFloatArg(rr);
+        rrStr << rr << ",";
+    }
+    r2r = rrStr.str();
+    //msg.addFloatArg(args.rr);
     //msg.addIntArg(args.rssi);
     //settings.sendOSC("/hr", heartRate);
     //settings.sendOSC("/rssi", rssi);

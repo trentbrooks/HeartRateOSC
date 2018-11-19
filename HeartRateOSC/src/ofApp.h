@@ -4,7 +4,7 @@
 #include "ofxTouchGUI.h"
 #include "ofxBLEHeartRate.h"
 
-#define _VER 0.4
+#define _VER 0.5
 
 class ofApp : public ofBaseApp{
 
@@ -54,6 +54,7 @@ class ofApp : public ofBaseApp{
     int selectedDeviceIndex;// = 1;
     int heartRate;
     int rssi;
-    float r2r;
+//    vector<float> r2r;
+    string r2r; // vector array to string
 		
 };

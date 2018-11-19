@@ -75,7 +75,7 @@ public:
         rssi = rs;
         status = s;
     };
-    ofxBLEHeartRateEventArgs(string pId, string pName, float r2r, string s) {
+    ofxBLEHeartRateEventArgs(string pId, string pName, vector<float> r2r, string s) {
         peripheralId = pId;
         peripheralName = pName;
         rr = r2r;
@@ -83,7 +83,8 @@ public:
     };
     
     int heartRate;
-    float rr;
+    //float rr;
+    vector<float> rr;
     int rssi;
     string peripheralName;
     string peripheralId;
